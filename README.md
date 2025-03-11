@@ -245,7 +245,9 @@ Example:
 ---
 
 ## 🖼️ **Architecture Diagram**
-**[Insert Architecture Diagram Here]**  
+
+![Architecture Diagram](./img/image.png)
+
 - Lambda deployed using AWS CDK.  
 - Multi-stage pipeline managed via Harness.  
 - Secrets stored in AWS Secrets Manager.  
