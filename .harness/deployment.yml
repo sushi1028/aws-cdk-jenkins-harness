@@ -1,0 +1,327 @@
+pipeline:
+  name: deployment
+  identifier: deployment
+  projectIdentifier: default_project
+  orgIdentifier: default
+  tags: {}
+  stages:
+    - stage:
+        name: Development
+        identifier: dev
+        description: ""
+        type: Custom
+        spec:
+          execution:
+            steps:
+              - stepGroup:
+                  name: Development
+                  identifier: dev
+                  steps:
+                    - step:
+                        type: GitClone
+                        name: Clone Repository
+                        identifier: GitClone_1
+                        spec:
+                          connectorRef: github
+                          build:
+                            type: branch
+                            spec:
+                              branch: main
+                    - step:
+                        type: AwsCdkBootstrap
+                        name: CDK Bootstrap
+                        identifier: CDK_Bootstrap
+                        spec:
+                          connectorRef: account.harnessImage
+                          envVariables:
+                            AWS_ACCESS_KEY_ID: <+secrets.getValue("AWS_ACCESS_KEY_ID")>
+                            AWS_SECRET_ACCESS_KEY: <+secrets.getValue("AWS_SECRET_ACCESS_KEY")>
+                            AWS_DEFAULT_REGION: <+secrets.getValue("AWS_DEFAULT_REGION")>
+                          image: sushanteno8/harness:v4
+                          resources:
+                            limits:
+                              memory: 1000Mi
+                              cpu: 1000m
+                        timeout: 10m
+                    - step:
+                        type: AwsCdkSynth
+                        name: CDK Synth
+                        identifier: AwsCdkSynth_1
+                        spec:
+                          connectorRef: account.harnessImage
+                          envVariables:
+                            AWS_ACCESS_KEY_ID: <+secrets.getValue("AWS_ACCESS_KEY_ID")>
+                            AWS_SECRET_ACCESS_KEY: <+secrets.getValue("AWS_SECRET_ACCESS_KEY")>
+                            AWS_DEFAULT_REGION: <+secrets.getValue("AWS_DEFAULT_REGION")>
+                          image: sushanteno8/harness:v4
+                          appPath: ""
+                          resources:
+                            limits:
+                              memory: 1000Mi
+                              cpu: 1000m
+                        timeout: 10m
+                    - step:
+                        type: AwsCdkDiff
+                        name: Show Infrastructure Changes
+                        identifier: CdkDiff_Dev
+                        spec:
+                          connectorRef: account.harnessImage
+                          envVariables:
+                            AWS_ACCESS_KEY_ID: <+secrets.getValue("AWS_ACCESS_KEY_ID")>
+                            AWS_SECRET_ACCESS_KEY: <+secrets.getValue("AWS_SECRET_ACCESS_KEY")>
+                            AWS_DEFAULT_REGION: <+secrets.getValue("AWS_DEFAULT_REGION")>
+                            ENV: "development"
+                          image: sushanteno8/harness:v5
+                          provisionerIdentifier: dev
+                        timeout: 5m
+                    - step:
+                        type: AwsCdkDeploy
+                        name: CDK Deploy
+                        identifier: CDK_Deploy
+                        spec:
+                          connectorRef: account.harnessImage
+                          envVariables:
+                            AWS_ACCESS_KEY_ID: <+secrets.getValue("AWS_ACCESS_KEY_ID")>
+                            AWS_SECRET_ACCESS_KEY: <+secrets.getValue("AWS_SECRET_ACCESS_KEY")>
+                            AWS_DEFAULT_REGION: <+secrets.getValue("AWS_DEFAULT_REGION")>
+                          image: sushanteno8/harness:v5
+                          provisionerIdentifier: test1
+                          resources:
+                            limits:
+                              memory: 1000Mi
+                              cpu: 1000m
+                        timeout: 10m
+                        failureStrategies:
+                          - onFailure:
+                              errors:
+                                - AllErrors
+                              action:
+                                type: MarkAsFailure
+                    # - step:
+                    #     type: AwsCdkRollback
+                    #     name: AWS CDK Rollback
+                    #     identifier: AWS_CDK_Rollback
+                    #     spec:
+                    #       provisionerIdentifier: test1
+                    #       envVariables:
+                    #         AWS_ACCESS_KEY_ID: <+secrets.getValue("AWS_ACCESS_KEY_ID")>
+                    #         AWS_SECRET_ACCESS_KEY: <+secrets.getValue("AWS_SECRET_ACCESS_KEY")>
+                    #         AWS_DEFAULT_REGION: <+secrets.getValue("AWS_DEFAULT_REGION")>
+                    #     timeout: 10m
+                    
+                  stepGroupInfra:
+                    type: KubernetesDirect
+                    spec:
+                      connectorRef: deployment
+            rollbackSteps: []
+            serviceDependencies: []
+        tags: {}
+
+    - stage:
+        name: Stage
+        identifier: stage
+        description: ""
+        type: Custom
+        spec:
+          execution:
+            steps:
+              - stepGroup:
+                  name: Stage
+                  identifier: stage
+                  steps:
+                    - step:
+                        type: GitClone
+                        name: Clone Repository
+                        identifier: GitClone_Stage
+                        spec:
+                          connectorRef: github
+                          build:
+                            type: branch
+                            spec:
+                              branch: main
+                    - step:
+                        type: AwsCdkBootstrap
+                        name: CDK Bootstrap
+                        identifier: AwsCdkBootstrap_Stage
+                        spec:
+                          connectorRef: account.harnessImage
+                          envVariables:
+                            AWS_ACCESS_KEY_ID: <+secrets.getValue("AWS_ACCESS_KEY_ID")>
+                            AWS_SECRET_ACCESS_KEY: <+secrets.getValue("AWS_SECRET_ACCESS_KEY")>
+                            AWS_DEFAULT_REGION: <+secrets.getValue("AWS_DEFAULT_REGION")>
+                          image: sushanteno8/harness:v4
+                          resources:
+                            limits:
+                              memory: 1000Mi
+                              cpu: 1000m
+                        timeout: 10m
+                    - step:
+                        type: AwsCdkSynth
+                        name: CDK Synth
+                        identifier: AwsCdkSynth_Stage
+                        spec:
+                          connectorRef: account.harnessImage
+                          envVariables:
+                            AWS_ACCESS_KEY_ID: <+secrets.getValue("AWS_ACCESS_KEY_ID")>
+                            AWS_SECRET_ACCESS_KEY: <+secrets.getValue("AWS_SECRET_ACCESS_KEY")>
+                            AWS_DEFAULT_REGION: <+secrets.getValue("AWS_DEFAULT_REGION")>
+                          image: sushanteno8/harness:v4
+                          appPath: ""
+                          resources:
+                            limits:
+                              memory: 1000Mi
+                              cpu: 1000m
+                        timeout: 10m
+                    - step:
+                        type: AwsCdkDiff
+                        name: Show Infrastructure Changes
+                        identifier: CdkDiff_Stage
+                        spec:
+                          connectorRef: account.harnessImage
+                          envVariables:
+                            AWS_ACCESS_KEY_ID: <+secrets.getValue("AWS_ACCESS_KEY_ID")>
+                            AWS_SECRET_ACCESS_KEY: <+secrets.getValue("AWS_SECRET_ACCESS_KEY")>
+                            AWS_DEFAULT_REGION: <+secrets.getValue("AWS_DEFAULT_REGION")>
+                            ENV: "staging"
+                          image: sushanteno8/harness:v5
+                          provisionerIdentifier: stage
+                        timeout: 5m
+              - step:
+                  type: HarnessApproval
+                  name: Stage Approval
+                  identifier: Approval_Stage
+                  spec:
+                    approvalMessage: Please review the following information and approve the pipeline progression for the Stage environment.
+                    includePipelineExecutionHistory: true
+                    isAutoRejectEnabled: false
+                    approvers:
+                      userGroups:
+                        - account._account_all_users
+                      minimumCount: 1
+                      disallowPipelineExecutor: false
+                    approverInputs: []
+                  timeout: 30m
+              - step:
+                - stepGroup:
+                        type: AwsCdkDeploy
+                        name: CDK Deploy for Stage
+                        identifier: CDK_Deploy_Stage
+                        spec:
+                          connectorRef: account.harnessImage
+                          envVariables:
+                            AWS_ACCESS_KEY_ID: <+secrets.getValue("AWS_ACCESS_KEY_ID")>
+                            AWS_SECRET_ACCESS_KEY: <+secrets.getValue("AWS_SECRET_ACCESS_KEY")>
+                            AWS_DEFAULT_REGION: <+secrets.getValue("AWS_DEFAULT_REGION")>
+                          image: sushanteno8/harness:v5
+                          provisionerIdentifier: stage
+                          resources:
+                            limits:
+                              memory: 1000Mi
+                              cpu: 1000m
+                        timeout: 10m
+          serviceDependencies: []
+        tags: {}
+
+    - stage:
+        name: Production
+        identifier: prod
+        description: ""
+        type: Custom
+        spec:
+          execution:
+            steps:
+              - stepGroup:
+                  name: Production
+                  identifier: prod
+                  steps:
+                    - step:
+                        type: GitClone
+                        name: Clone Repository
+                        identifier: GitClone_Prod
+                        spec:
+                          connectorRef: github
+                          build:
+                            type: branch
+                            spec:
+                              branch: main
+                    - step:
+                        type: AwsCdkBootstrap
+                        name: CDK Bootstrap
+                        identifier: AwsCdkBootstrap_Prod
+                        spec:
+                          connectorRef: account.harnessImage
+                          envVariables:
+                            AWS_ACCESS_KEY_ID: <+secrets.getValue("AWS_ACCESS_KEY_ID")>
+                            AWS_SECRET_ACCESS_KEY: <+secrets.getValue("AWS_SECRET_ACCESS_KEY")>
+                            AWS_DEFAULT_REGION: <+secrets.getValue("AWS_DEFAULT_REGION")>
+                          image: sushanteno8/harness:v4
+                          resources:
+                            limits:
+                              memory: 1000Mi
+                              cpu: 1000m
+                        timeout: 10m
+                    - step:
+                        type: AwsCdkSynth
+                        name: CDK Synth
+                        identifier: AwsCdkSynth_Prod
+                        spec:
+                          connectorRef: account.harnessImage
+                          envVariables:
+                            AWS_ACCESS_KEY_ID: <+secrets.getValue("AWS_ACCESS_KEY_ID")>
+                            AWS_SECRET_ACCESS_KEY: <+secrets.getValue("AWS_SECRET_ACCESS_KEY")>
+                            AWS_DEFAULT_REGION: <+secrets.getValue("AWS_DEFAULT_REGION")>
+                          image: sushanteno8/harness:v4
+                          appPath: ""
+                          resources:
+                            limits:
+                              memory: 1000Mi
+                              cpu: 1000m
+                        timeout: 10m
+                    - step:
+                        type: AwsCdkDiff
+                        name: Show Infrastructure Changes
+                        identifier: CdkDiff_Prod
+                        spec:
+                          connectorRef: account.harnessImage
+                          envVariables:
+                            AWS_ACCESS_KEY_ID: <+secrets.getValue("AWS_ACCESS_KEY_ID")>
+                            AWS_SECRET_ACCESS_KEY: <+secrets.getValue("AWS_SECRET_ACCESS_KEY")>
+                            AWS_DEFAULT_REGION: <+secrets.getValue("AWS_DEFAULT_REGION")>
+                            ENV: "production"
+                          image: sushanteno8/harness:v5
+                          provisionerIdentifier: prod
+                        timeout: 5m
+              - step:
+                  type: HarnessApproval
+                  name: Production Approval
+                  identifier: Approval_Prod
+                  spec:
+                    approvalMessage: Please review the following information and approve the pipeline progression for the Production environment.
+                    includePipelineExecutionHistory: true
+                    isAutoRejectEnabled: false
+                    approvers:
+                      userGroups:
+                        - account._account_all_users
+                      minimumCount: 1
+                      disallowPipelineExecutor: false
+                    approverInputs: []
+                  timeout: 30m
+              - step:
+                        type: AwsCdkDeploy
+                        name: CDK Deploy for Production
+                        identifier: CDK_Deploy_Prod
+                        spec:
+                          connectorRef: account.harnessImage
+                          envVariables:
+                            AWS_ACCESS_KEY_ID: <+secrets.getValue("AWS_ACCESS_KEY_ID")>
+                            AWS_SECRET_ACCESS_KEY: <+secrets.getValue("AWS_SECRET_ACCESS_KEY")>
+                            AWS_DEFAULT_REGION: <+secrets.getValue("AWS_DEFAULT_REGION")>
+                          image: sushanteno8/harness:v5
+                          provisionerIdentifier: prod
+                          resources:
+                            limits:
+                              memory: 1000Mi
+                              cpu: 1000m
+                        timeout: 10m
+          serviceDependencies: []
+        tags: {}
